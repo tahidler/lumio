@@ -1,712 +1,448 @@
-"use client";
+'use client'
 
-import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
-import { Sparkles, ArrowRight, Check, Star, Zap, Layout, Code2, FileText, Palette, Menu, X, ChevronRight } from "lucide-react";
-import CursorGlow from "@/components/CursorGlow";
-import MagneticButton from "@/components/MagneticButton";
-import SplitText from "@/components/SplitText";
-import Link from "next/link";
+import { useState, useRef, useEffect } from 'react'
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
+import { ArrowRight, ChevronRight, Check, X, Menu, Github, Twitter, Linkedin, Zap, FileText, Code, Brain, ArrowUpRight, ShieldCheck, Stars, Rocket, Sparkles, Wand2, Lightbulb, UserRound, LayoutDashboard } from 'lucide-react'
 
-// ── BACKGROUND SCENE ────────────────────────────────────────────────────────
-function BackgroundScene() {
+// ── Composants pour la page (à créer) ───────────────────
+// Ces composants seront créés au fur et à mesure. Pour l'instant on les laisse dans page.tsx pour la démo
+
+// Composant temporaire pour un badge
+function BentoCard({ className, children, href, style }: { className?: string; children: React.ReactNode; href?: string; style?: React.CSSProperties }) {
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-      {/* Deep space gradient */}
-      <div className="absolute inset-0" style={{
-        background: "radial-gradient(ellipse at 50% 0%, rgba(88,28,135,0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(30,64,175,0.3) 0%, transparent 50%), #000"
-      }} />
-
-      {/* Grid */}
-      <div className="absolute inset-0 opacity-[0.07]" style={{
-        backgroundImage: "linear-gradient(rgba(139,92,246,1) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,1) 1px, transparent 1px)",
-        backgroundSize: "80px 80px",
-        maskImage: "radial-gradient(ellipse at center, black 20%, transparent 80%)",
-      }} />
-
-      {/* Orbs */}
-      <motion.div
-        animate={{ x: [0, 80, 0], y: [0, -60, 0], scale: [1, 1.2, 1] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[-200px] left-[-100px] w-[700px] h-[700px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)" }}
-      />
-      <motion.div
-        animate={{ x: [0, -60, 0], y: [0, 80, 0], scale: [1, 1.3, 1] }}
-        transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 5 }}
-        className="absolute bottom-[-200px] right-[-100px] w-[600px] h-[600px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)" }}
-      />
-      <motion.div
-        animate={{ x: [0, 40, 0], y: [0, -40, 0] }}
-        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 3 }}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full"
-        style={{ background: "radial-gradient(circle, rgba(244,114,182,0.06) 0%, transparent 70%)" }}
-      />
-
-      {/* Stars */}
-      {Array.from({ length: 80 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full bg-white"
-          style={{
-            width: Math.random() * 2 + 0.5,
-            height: Math.random() * 2 + 0.5,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{ opacity: [Math.random() * 0.3, Math.random() * 0.8 + 0.2, Math.random() * 0.3] }}
-          transition={{ duration: Math.random() * 4 + 2, repeat: Infinity, delay: Math.random() * 5 }}
-        />
-      ))}
-    </div>
-  );
+    <motion.a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      whileHover="hover"
+      whileTap="tap"
+      variants={{
+        hover: { scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.3)' },
+        tap: { scale: 0.98 }
+      }}
+      className={`relative rounded-3xl p-6 overflow-hidden border ${className}`}
+      style={{ background: 'var(--surface)', borderColor: 'var(--border)', ...style }}
+    >
+      {children}
+    </motion.a>
+  )
 }
 
-// ── NAVBAR ────────────────────────────────────────────────────────────────────
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
+// Composant temporaire pour le CTA principal
+function MainCTA({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.button
+      whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} 
+      className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-lg font-semibold text-white transition-all"
+      style={{ background: 'linear-gradient(135deg, #a78bfc, #7c3aed)', boxShadow: '0 4px 20px rgba(124,58,237,0.4)' }}
+    >
+      {children}
+    </motion.button>
+  )
+}
 
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
+// ── Layout principal avec les sections ──────────────────
+export default function Home() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const links = [
+    { label: 'Produits', href: '#products' },
+    { label: 'Fonctionnalités', href: '#features' },
+    { label: 'Pricing', href: '#pricing' },
+    { label: 'Blog', href: '#blog' },
+  ]
 
-  const links = ["Produits", "Templates", "Pricing", "Blog"];
+  const stats = [
+    { value: '50+', label: 'Produits', icon: <Sparkles size={16} /> },
+    { value: '2,000+', label: 'Clients', icon: <UserRound size={16} /> },
+    { value: '4.9/5', label: 'Note moyenne', icon: <Stars size={16} /> },
+  ]
+
+  const heroRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0])
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.05])
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 100])
 
   return (
-    <motion.header
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.7, ease: [0.215, 0.61, 0.355, 1] }}
-      className="fixed top-0 left-0 right-0 z-50 px-6 py-5"
-    >
-      <motion.div
-        animate={{
-          background: scrolled ? "rgba(0,0,0,0.7)" : "transparent",
-          backdropFilter: scrolled ? "blur(30px)" : "none",
-          borderColor: scrolled ? "rgba(255,255,255,0.08)" : "transparent",
-        }}
-        className="max-w-6xl mx-auto flex items-center justify-between rounded-2xl px-6 py-3 border transition-all duration-500"
-      >
-        {/* Logo */}
-        <motion.div className="flex items-center gap-2 cursor-pointer" whileHover={{ scale: 1.05 }}>
-          <motion.div
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-blue-500 flex items-center justify-center"
-          >
-            <Sparkles size={14} className="text-white" />
-          </motion.div>
-          <span className="font-black text-xl tracking-tight tg">Lumio</span>
-        </motion.div>
-
-        {/* Links */}
-        <nav className="hidden md:flex items-center gap-8">
-          {links.map((link, i) => (
-            <motion.a
-              key={link}
-              href="#"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + i * 0.08 }}
-              className="text-sm text-white/50 hover:text-white transition-colors relative group"
-            >
-              {link}
-              <span className="absolute -bottom-1 left-0 w-0 h-px bg-gradient-to-r from-violet-500 to-blue-500 group-hover:w-full transition-all duration-300" />
-            </motion.a>
-          ))}
-        </nav>
-
-        {/* CTA */}
-        <div className="hidden md:flex items-center gap-3">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            className="text-sm text-white/50 hover:text-white transition-colors px-4 py-2"
-          >
-            Se connecter
-          </motion.button>
-          <MagneticButton className="relative text-sm font-bold text-white px-5 py-2.5 rounded-xl animated-border bg-violet-600/20 hover:bg-violet-600/30 transition-colors">
-            Commencer →
-          </MagneticButton>
-        </div>
-
-        <button className="md:hidden text-white/50" onClick={() => setOpen(!open)}>
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </motion.div>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden max-w-6xl mx-auto mt-2 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-4"
-          >
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      {/* Fixed Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 py-4 px-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between glass rounded-3xl border [border-color:var(--border)] py-2.5 px-6 shadow-lg shadow-black/20">
+          <a href="#" className="font-bold text-lg tg flex items-center gap-2">
+            <Zap size={20} /> Lumio
+          </a>
+          <div className="hidden md:flex items-center gap-1">
             {links.map(link => (
-              <a key={link} href="#" className="block py-3 text-white/50 hover:text-white transition-colors border-b border-white/5 last:border-none">
-                {link}
+              <a key={link.label} href={link.href} className="px-4 py-2 rounded-full text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/[0.05] transition-colors">
+                {link.label}
               </a>
             ))}
-            <button className="mt-4 w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white py-3 rounded-xl font-bold text-sm">
-              Commencer →
+          </div>
+          <div className="flex items-center gap-3">
+            <a href="#" className="hidden md:block text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
+              Se connecter
+            </a>
+            <motion.button
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              className="px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[var(--purple-dark)] shadow-md shadow-[var(--purple-dark)/30%] hover:scale-[1.02] active:scale-[0.98] transition-transform"
+            >
+              Commencer
+            </motion.button>
+            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-[var(--text)]">
+              <Menu size={24} />
             </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 bg-[var(--bg)] z-[100] flex flex-col items-center justify-center p-8"
+          >
+            <button onClick={() => setMobileMenuOpen(false)} className="absolute top-6 right-6 text-[var(--text)]">
+              <X size={28} />
+            </button>
+            <nav className="flex flex-col gap-6 text-center text-2xl font-bold">
+              {links.map(link => (
+                <a key={link.label} href={link.href} onClick={() => setMobileMenuOpen(false)} className="tg text-4xl">
+                  {link.label}
+                </a>
+              ))}
+              <a href="#" onClick={() => setMobileMenuOpen(false)} className="text-2xl text-[var(--text-muted)] mt-8">
+                Se connecter
+              </a>
+              <MainCTA>
+                Commencer
+              </MainCTA>
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.header>
-  );
-}
 
-// ── HERO ──────────────────────────────────────────────────────────────────────
-function Hero() {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, -200]);
-  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.6], [1, 0.9]);
-
-  return (
-    <section ref={ref} className="relative min-h-screen flex items-center justify-center overflow-hidden px-6">
-      <motion.div style={{ y, opacity, scale }} className="text-center max-w-5xl mx-auto z-10 relative pt-20">
-
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, type: "spring" }}
-          className="inline-flex items-center gap-2 mb-8"
+      <main className="relative z-10 pt-24">
+        {/* Hero Section */}
+        <motion.section 
+          ref={heroRef}
+          style={{ opacity: heroOpacity }}
+          className="relative min-h-[calc(100vh-6rem)] flex items-center justify-center px-4 overflow-hidden pt-12"
         >
-          <div className="relative inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/25 rounded-full px-5 py-2.5 text-sm font-medium text-violet-300">
+          <motion.div style={{ scale: heroScale, y: heroY }} className="relative z-10 text-center">
             <motion.div
-              animate={{ scale: [1, 1.5, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="w-2 h-2 bg-violet-400 rounded-full"
-            />
-            La boutique de ressources pour builders
-            <ChevronRight size={14} className="opacity-60" />
-          </div>
-        </motion.div>
-
-        {/* Headline */}
-        <div className="mb-6 overflow-hidden">
-          <h1 className="text-6xl md:text-8xl font-black leading-[1.0] tracking-tighter">
-            <div className="overflow-hidden">
-              <motion.div
-                initial={{ y: 120 }}
-                animate={{ y: 0 }}
-                transition={{ delay: 0.4, duration: 0.9, ease: [0.215, 0.61, 0.355, 1] }}
-              >
-                <span className="tg">Build</span>{" "}
-                <span className="text-white">plus</span>
-              </motion.div>
-            </div>
-            <div className="overflow-hidden">
-              <motion.div
-                initial={{ y: 120 }}
-                animate={{ y: 0 }}
-                transition={{ delay: 0.55, duration: 0.9, ease: [0.215, 0.61, 0.355, 1] }}
-              >
-                <span className="text-white">vite</span>{" "}
-                <span className="tg">avec</span>
-              </motion.div>
-            </div>
-            <div className="overflow-hidden">
-              <motion.div
-                initial={{ y: 120 }}
-                animate={{ y: 0 }}
-                transition={{ delay: 0.7, duration: 0.9, ease: [0.215, 0.61, 0.355, 1] }}
-              >
-                <span className="text-white/90 italic">Lumio.</span>
-              </motion.div>
-            </div>
-          </h1>
-        </div>
-
-        {/* Sub */}
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
-          className="text-lg md:text-xl text-white/40 mb-10 max-w-2xl mx-auto leading-relaxed"
-        >
-          Templates Notion, UI kits, boilerplates et outils pensés pour ceux
-          qui construisent des choses qui comptent.
-        </motion.p>
-
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.05 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-        >
-          <Link href="/products">
-            <MagneticButton className="group relative flex items-center gap-3 bg-white text-black font-bold px-8 py-4 rounded-2xl text-base overflow-hidden">
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-violet-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              />
-              <span className="relative z-10 group-hover:text-white transition-colors">Explorer les produits</span>
-              <ArrowRight size={18} className="relative z-10 group-hover:text-white group-hover:translate-x-1 transition-all" />
-            </MagneticButton>
-          </Link>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            className="flex items-center gap-2 text-white/50 text-base hover:text-white transition-colors px-4 py-4"
-          >
-            <span>Voir la démo</span>
-            <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center">
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                ▶
-              </motion.div>
-            </div>
-          </motion.button>
-        </motion.div>
-
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.3 }}
-          className="flex flex-wrap justify-center gap-10 mt-20"
-        >
-          {[
-            { n: "50+", l: "Produits" },
-            { n: "2 000+", l: "Utilisateurs" },
-            { n: "4.9 / 5", l: "Satisfaction" },
-          ].map(({ n, l }) => (
-            <div key={l} className="text-center">
-              <div className="text-3xl font-black tg">{n}</div>
-              <div className="text-xs text-white/30 mt-1 uppercase tracking-widest">{l}</div>
-            </div>
-          ))}
-        </motion.div>
-      </motion.div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.8 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-      >
-        <span className="text-xs text-white/20 uppercase tracking-widest">Scroll</span>
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="w-px h-10 bg-gradient-to-b from-violet-500 to-transparent"
-        />
-      </motion.div>
-    </section>
-  );
-}
-
-// ── MARQUEE ───────────────────────────────────────────────────────────────────
-function Marquee() {
-  const items = ["Notion Templates", "UI Kits", "Boilerplates", "Prompts GPT", "Guides PDF", "Bundles", "Design Systems", "Code Starters"];
-  const doubled = [...items, ...items];
-
-  return (
-    <div className="relative z-10 py-10 overflow-hidden border-y border-white/5">
-      <div className="flex marquee-inner whitespace-nowrap">
-        {doubled.map((item, i) => (
-          <span key={i} className="inline-flex items-center gap-4 px-8 text-sm font-medium text-white/25 uppercase tracking-widest">
-            <Sparkles size={12} className="text-violet-500/60 shrink-0" />
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── FEATURES BENTO ───────────────────────────────────────────────────────────
-function FeatureCard({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ delay, duration: 0.7, ease: [0.215, 0.61, 0.355, 1] }}
-      className={`card rounded-3xl overflow-hidden relative ${className}`}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function BentoSection() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-
-  return (
-    <section className="relative z-10 py-32 px-6">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          ref={ref}
-          initial={{ opacity: 0, y: 40 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          className="text-center mb-16"
-        >
-          <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-4">Ce qu&apos;on propose</p>
-          <h2 className="text-4xl md:text-6xl font-black leading-tight">
-            Tout pour{" "}
-            <span className="tg">décoller</span>
-            <br />plus vite
-          </h2>
-        </motion.div>
-
-        {/* Bento grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Big card */}
-          <FeatureCard className="md:col-span-2 p-8 min-h-[300px]" delay={0}>
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 to-transparent" />
-            <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center mb-6">
-                <Layout size={24} className="text-white" />
-              </div>
-              <h3 className="text-2xl font-black mb-3">Templates Notion</h3>
-              <p className="text-white/40 text-sm leading-relaxed max-w-sm">
-                2ème cerveau, OS étudiant, startup kit, fitness tracker...
-                Des systèmes complets conçus pour durer.
-              </p>
-              <div className="flex gap-2 mt-6 flex-wrap">
-                {["Productivité", "Startup", "Étudiant", "Fitness"].map(tag => (
-                  <span key={tag} className="text-xs bg-violet-500/15 text-violet-300 border border-violet-500/20 rounded-full px-3 py-1">{tag}</span>
-                ))}
-              </div>
-            </div>
-            {/* Floating mockup */}
-            <div className="absolute right-6 bottom-6 w-40 h-28 bg-white/5 rounded-xl border border-white/10 float opacity-60 hidden md:block">
-              <div className="p-3 space-y-2">
-                {[80, 60, 90, 45].map((w, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-violet-500/60" />
-                    <div className="h-2 bg-white/20 rounded-full" style={{ width: `${w}%` }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </FeatureCard>
-
-          {/* Small card */}
-          <FeatureCard className="p-8 min-h-[300px]" delay={0.1}>
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
-            <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center mb-6">
-                <Code2 size={24} className="text-white" />
-              </div>
-              <h3 className="text-xl font-black mb-3">Boilerplates</h3>
-              <p className="text-white/40 text-sm leading-relaxed">
-                Next.js, FastAPI, SaaS starters.
-                Lance en heures.
-              </p>
-              <div className="mt-6 font-mono text-xs text-green-400/70 bg-black/40 rounded-lg p-3">
-                <div>$ npx create-lumio-app</div>
-                <div className="text-white/30">✓ Setup complet en 30s</div>
-              </div>
-            </div>
-          </FeatureCard>
-
-          {/* Small card */}
-          <FeatureCard className="p-8" delay={0.2}>
-            <div className="absolute inset-0 bg-gradient-to-br from-pink-600/10 to-transparent" />
-            <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-600 flex items-center justify-center mb-6">
-                <Palette size={24} className="text-white" />
-              </div>
-              <h3 className="text-xl font-black mb-3">UI Kits</h3>
-              <p className="text-white/40 text-sm">Figma + React. Pixel-perfect.</p>
-              <div className="flex gap-2 mt-4">
-                {["#818cf8", "#c084fc", "#f472b6", "#38bdf8"].map(c => (
-                  <div key={c} className="w-8 h-8 rounded-full border-2 border-black/50 float-delay" style={{ background: c }} />
-                ))}
-              </div>
-            </div>
-          </FeatureCard>
-
-          {/* Medium card */}
-          <FeatureCard className="md:col-span-2 p-8" delay={0.3}>
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 to-transparent" />
-            <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start">
-              <div className="flex-1">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-6">
-                  <Zap size={24} className="text-white" />
-                </div>
-                <h3 className="text-xl font-black mb-3">Prompts & Guides</h3>
-                <p className="text-white/40 text-sm leading-relaxed">
-                  50+ prompts GPT packagés + mini-guides PDF.
-                  Des raccourcis qui font gagner des heures.
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 w-full md:w-48 shrink-0">
-                {["Marketing", "Dev", "Design", "Finance", "SEO", "Copywriting"].map(tag => (
-                  <div key={tag} className="text-xs bg-amber-500/10 text-amber-300/70 border border-amber-500/15 rounded-lg px-3 py-2 text-center">
-                    {tag}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </FeatureCard>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── TESTIMONIALS ──────────────────────────────────────────────────────────────
-const testimonials = [
-  { name: "Marie L.", role: "Freelance Designer", text: "Le UI kit m'a fait économiser 2 semaines. Qualité incroyable.", stars: 5, avatar: "ML" },
-  { name: "Karim B.", role: "Indie hacker", text: "J'ai lancé mon SaaS en 3 jours avec le boilerplate. Imposs sans Lumio.", stars: 5, avatar: "KB" },
-  { name: "Sophie T.", role: "Étudiante en médecine", text: "Le template Notion 2ème cerveau a révolutionné ma façon d'étudier.", stars: 5, avatar: "ST" },
-  { name: "Alex M.", role: "Growth marketer", text: "Les prompts GPT sont exactement ce qu'il me fallait. ROI immédiat.", stars: 5, avatar: "AM" },
-];
-
-function Testimonials() {
-  return (
-    <section className="relative z-10 py-24 px-6 overflow-hidden">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-4">Ce qu&apos;ils disent</p>
-          <h2 className="text-4xl md:text-5xl font-black">
-            Ils ont <span className="tg">décollé</span> avec Lumio
-          </h2>
-        </motion.div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={t.name}
-              initial={{ opacity: 0, y: 40, rotate: i % 2 === 0 ? -2 : 2 }}
-              whileInView={{ opacity: 1, y: 0, rotate: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -8, rotate: i % 2 === 0 ? -1 : 1 }}
-              className="card rounded-2xl p-6"
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border [border-color:var(--border)] mb-6"
             >
-              <div className="flex gap-1 mb-4">
-                {Array.from({ length: t.stars }).map((_, j) => (
-                  <Star key={j} size={12} className="text-amber-400 fill-amber-400" />
-                ))}
-              </div>
-              <p className="text-sm text-white/60 mb-4 leading-relaxed">&ldquo;{t.text}&rdquo;</p>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center text-xs font-bold">
-                  {t.avatar}
-                </div>
-                <div>
-                  <p className="text-sm font-bold">{t.name}</p>
-                  <p className="text-xs text-white/30">{t.role}</p>
-                </div>
-              </div>
+              <Zap size={16} className="text-[var(--purple)]" />
+              <span className="text-sm font-medium text-white/70">Nouvelles ressources, chaque semaine.</span>
             </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
-// ── PRICING ───────────────────────────────────────────────────────────────────
-const plans = [
-  {
-    name: "Free", price: "0€", desc: "Pour explorer",
-    features: ["3 templates gratuits", "Accès communauté", "Newsletter"],
-    cta: "Commencer →", hot: false,
-    gradient: "from-white/5 to-white/[0.02]",
-  },
-  {
-    name: "Pro", price: "29€", period: "/mois", desc: "Pour les builders",
-    features: ["Tous les templates", "UI Kits complets", "Boilerplates", "Packs prompts", "Support prioritaire"],
-    cta: "Passer Pro →", hot: true,
-    gradient: "from-violet-600/20 to-blue-600/10",
-  },
-  {
-    name: "VIP", price: "99€", period: "/an", desc: "Accès à vie",
-    features: ["Tout Pro inclus", "Accès anticipé", "Call 1-on-1/mois", "Contenu exclusif", "Badge VIP"],
-    cta: "Rejoindre VIP →", hot: false,
-    gradient: "from-amber-600/10 to-orange-600/5",
-  },
-];
-
-function Pricing() {
-  return (
-    <section className="relative z-10 py-32 px-6">
-      <div className="max-w-5xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <p className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-4">Pricing</p>
-          <h2 className="text-4xl md:text-6xl font-black">
-            Simple &amp; <span className="tg">honnête</span>
-          </h2>
-          <p className="text-white/30 mt-4">Sans surprise. Tu paies ce que tu veux.</p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              whileHover={{ y: -8 }}
-              className={`relative rounded-3xl p-7 bg-gradient-to-b ${plan.gradient} border ${plan.hot ? "border-violet-500/30" : "border-white/5"}`}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.6 }}
+              className="text-5xl md:text-7xl lg:text-8xl font-extrabold leading-[1.1] tracking-tighter max-w-4xl mx-auto"
             >
-              {plan.hot && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <motion.div
-                    animate={{ boxShadow: ["0 0 20px rgba(139,92,246,0.5)", "0 0 40px rgba(139,92,246,0.8)", "0 0 20px rgba(139,92,246,0.5)"] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-xs font-black px-5 py-1.5 rounded-full"
-                  >
-                    ⭐ RECOMMANDÉ
-                  </motion.div>
-                </div>
-              )}
+              Build <span className="tg">plus vite</span> avec <br className="hidden md:block" />
+              <span className="tg">Lumio.</span>
+            </motion.h1>
 
-              <p className="text-sm text-white/40 font-medium mb-2">{plan.name}</p>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-5xl font-black">{plan.price}</span>
-                {plan.period && <span className="text-white/30 text-sm">{plan.period}</span>}
-              </div>
-              <p className="text-xs text-white/25 mb-6">{plan.desc}</p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.6 }}
+              className="text-lg md:text-xl text-[var(--text-muted)] mt-5 max-w-2xl mx-auto leading-relaxed"
+            >
+              Templates Notion, UI kits, boilerplates et prompts IA.
+              Tout ce dont vous avez besoin pour builder plus vite, avec un niveau de qualité inégalé.
+            </motion.p>
 
-              <ul className="space-y-3 mb-8">
-                {plan.features.map(f => (
-                  <li key={f} className="flex items-center gap-3 text-sm text-white/60">
-                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center shrink-0">
-                      <Check size={10} className="text-white" />
-                    </div>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <MagneticButton
-                className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all ${
-                  plan.hot
-                    ? "bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:shadow-[0_0_30px_rgba(139,92,246,0.5)]"
-                    : "border border-white/10 text-white/60 hover:bg-white/5 hover:text-white"
-                }`}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }}
+              className="flex justify-center gap-4 mt-10"
+            >
+              <MainCTA>
+                Explorer les produits <ArrowRight size={18} className="mt-0.5" />
+              </MainCTA>
+              <a
+                href="#"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full text-lg font-semibold text-[var(--purple)] border [border-color:var(--purple)] transition-all hover:bg-[var(--purple)]/10 active:scale-98"
               >
-                {plan.cta}
-              </MagneticButton>
+                Voir la démo <ChevronRight size={18} className="mt-0.5" />
+              </a>
             </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
-// ── CTA FINAL ─────────────────────────────────────────────────────────────────
-function FinalCTA() {
-  return (
-    <section className="relative z-10 py-32 px-6">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        className="max-w-4xl mx-auto text-center relative"
-      >
-        {/* Glow */}
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-blue-600/20 to-violet-600/20 rounded-3xl blur-3xl" />
-
-        <div className="relative bg-white/[0.03] border border-white/10 rounded-3xl p-16 overflow-hidden">
-          {/* Corner decorations */}
-          <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-violet-600/20 to-transparent rounded-tl-3xl" />
-          <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-blue-600/20 to-transparent rounded-br-3xl" />
-
-          <motion.div
-            animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.1, 1] }}
-            transition={{ duration: 4, repeat: Infinity }}
-            className="text-6xl mb-6 inline-block"
-          >
-            ✨
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.6 }}
+              className="flex justify-center gap-8 mt-12 text-sm text-[var(--text-muted)]"
+            >
+              {stats.map((stat, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  {stat.icon} <span className="font-medium">{stat.value} {stat.label}</span>
+                </div>
+              ))}
+            </motion.div>
           </motion.div>
 
-          <h2 className="text-4xl md:text-6xl font-black mb-4">
-            Prêt à{" "}
-            <span className="tg">briller</span> ?
-          </h2>
-          <p className="text-white/40 text-lg mb-10 max-w-lg mx-auto">
-            Rejoins des centaines de builders qui utilisent Lumio
-            pour construire plus vite et mieux.
-          </p>
+          {/* Background pattern & glow */}
+          <div className="absolute inset-0 top-1/2 bg-grid-pattern opacity-10" />
+          <div className="absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent,white,transparent)] flex items-center justify-center">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[var(--purple)] blur-[250px] opacity-10 pulse-anim" />
+          </div>
+        </motion.section>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <MagneticButton className="bg-white text-black font-black px-10 py-4 rounded-2xl text-base hover:bg-violet-50 transition-colors">
-              Commencer gratuitement →
-            </MagneticButton>
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              className="text-white/50 hover:text-white transition-colors px-6 py-4 text-sm"
+        {/* Products Section */}
+        <section id="products" className="py-24 px-4 text-center">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="text-4xl md:text-5xl font-bold tracking-tight max-w-2xl mx-auto leading-snug"
+          >
+            Tout pour décoller <span className="tg">plus vite</span>.
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+            className="text-lg text-[var(--text-muted)] mt-5 max-w-xl mx-auto leading-relaxed"
+          >
+            Des frameworks front-end aux templates Notion, Lumio vous donne les outils pour réussir.
+          </motion.p>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto mt-20">
+            <BentoCard className="md:col-span-2 lg:col-span-2 border-[var(--purple-dark)]/50 bg-[var(--purple-dark)]/[0.08] relative"
+              href="#">
+              <div className="absolute inset-0 bg-[var(--purple)] opacity-10 blur-3xl rounded-full" />
+              <div className="relative text-left">
+                <Zap size={32} className="text-white mb-4" />
+                <h3 className="text-2xl font-bold text-white">Templates Notion</h3>
+                <p className="text-[var(--text-muted)] mt-2">Organisez vos projets, gérez vos tâches, et boostez votre productivité avec nos templates Notion sur mesure.</p>
+                <div className="flex flex-wrap gap-2 mt-6">
+                  {['Productivity', 'Project Management', 'CRM', 'Marketing', 'Finance'].map(tag => (
+                    <span key={tag} className="px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.08] text-white/70 border [border-color:var(--border)]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <ArrowUpRight size={20} className="absolute bottom-6 right-6 text-white/60 group-hover:text-white transition-colors" />
+              </div>
+            </BentoCard>
+            <BentoCard href="#">
+              <LayoutDashboard size={32} className="text-[var(--blue)] mb-4" />
+              <h3 className="text-2xl font-bold text-white">UI Kits</h3>
+              <p className="text-[var(--text-muted)] mt-2">Créez des interfaces magnifiques et responsives en un temps record.</p>
+              <div className="flex flex-wrap gap-2 mt-6">
+                {['Figma', 'Sketch', 'React', 'Tailwind CSS'].map(tag => (
+                  <span key={tag} className="px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.08] text-white/70 border [border-color:var(--border)]">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </BentoCard>
+            <BentoCard href="#">
+              <Code size={32} className="text-emerald-400 mb-4" />
+              <h3 className="text-2xl font-bold text-white">Boilerplates</h3>
+              <p className="text-[var(--text-muted)] mt-2">Lancez vos projets avec des bases solides et optimisées.</p>
+              <div className="flex flex-wrap gap-2 mt-6">
+                {['Next.js', 'React', 'Vite', 'TypeScript'].map(tag => (
+                  <span key={tag} className="px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.08] text-white/70 border [border-color:var(--border)]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </BentoCard>
+              <BentoCard href="#">
+                <Brain size={32} className="text-pink-400 mb-4" />
+                <h3 className="text-2xl font-bold text-white">Prompts IA</h3>
+                <p className="text-[var(--text-muted)] mt-2">Débloquez la puissance de l'IA avec nos prompts et guides experts.</p>
+                <div className="flex flex-wrap gap-2 mt-6">
+                  {['ChatGPT', 'Midjourney', 'LLMs', 'Productivity'].map(tag => (
+                    <span key={tag} className="px-3 py-1 rounded-full text-xs font-semibold bg-white/[0.08] text-white/70 border [border-color:var(--border)]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </BentoCard>
+              
+              {/* Testimonials section */}
+              <BentoCard className="md:col-span-2 lg:col-span-2" href="#">
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-6">
+                    <img src="https://avatar.vercel.sh/emma" alt="Emma Dupont" className="w-12 h-12 rounded-full border border-white/20" />
+                    <div>
+                      <p className="text-white font-medium">Emma Dupont</p>
+                      <p className="text-sm text-[var(--text-muted)]">Tech Lead @ InnovLabs</p>
+                    </div>
+                  </div>
+                  <p className="text-lg text-white/80 leading-relaxed">
+                    « Les boilerplates Lumio nous ont fait gagner des semaines sur le lancement de notre MVP. La qualité du code est impressionnante ! »
+                  </p>
+                  <div className="flex gap-0.5 mt-4 text-amber-400">
+                    {[...Array(5)].map((_, i) => <Stars size={16} key={i} fill="currentColor" />)}
+                  </div>
+                </div>
+              </BentoCard>
+              <BentoCard className="md:col-span-2 lg:col-span-2" href="#">
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-6">
+                    <img src="https://avatar.vercel.sh/lucas" alt="Lucas Martin" className="w-12 h-12 rounded-full border border-white/20" />
+                    <div>
+                      <p className="text-white font-medium">Lucas Martin</p>
+                      <p className="text-sm text-[var(--text-muted)]">Freelance Designer</p>
+                    </div>
+                  </div>
+                  <p className="text-lg text-white/80 leading-relaxed">
+                    « Les UI kits sont un gain de temps incroyable. Le design est soigné et l'intégration avec Figma est parfaite. »
+                  </p>
+                  <div className="flex gap-0.5 mt-4 text-amber-400">
+                    {[...Array(5)].map((_, i) => <Stars size={16} key={i} fill="currentColor" />)}
+                  </div>
+                </div>
+              </BentoCard>
+            </div>
+          </section>
+
+          {/* Features Section */}
+          <section id="features" className="py-24 px-4 text-center">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-4xl md:text-5xl font-bold tracking-tight max-w-2xl mx-auto leading-snug"
             >
-              Voir tous les produits
-            </motion.button>
-          </div>
-        </div>
-      </motion.div>
-    </section>
-  );
-}
+              Des outils pensés pour votre <span className="tg-gold">succès</span>.
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+              className="text-lg text-[var(--text-muted)] mt-5 max-w-2xl mx-auto leading-relaxed"
+            >
+              Chaque ressource Lumio est conçue avec une obsession pour la qualité et la performance.
+            </motion.p>
 
-// ── FOOTER ────────────────────────────────────────────────────────────────────
-function Footer() {
-  return (
-    <footer className="relative z-10 border-t border-white/5 py-12 px-6">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
-            <Sparkles size={12} className="text-white" />
-          </div>
-          <span className="font-black tg">Lumio</span>
-        </div>
-        <p className="text-xs text-white/20">© 2026 Lumio. Tous droits réservés.</p>
-        <div className="flex gap-6">
-          {["CGV", "Confidentialité", "Contact"].map(l => (
-            <a key={l} href="#" className="text-xs text-white/25 hover:text-white/60 transition-colors">{l}</a>
-          ))}
-        </div>
+            <div className="grid lg:grid-cols-3 gap-6 max-w-7xl mx-auto mt-20">
+              {[1, 2, 3].map((_, i) => (
+                <BentoCard key={i} href="#">
+                  <Rocket size={32} className="text-[var(--purple)]" />
+                  <h3 className="text-xl font-bold text-white mt-4">Performances optimisées</h3>
+                  <p className="text-[var(--text-muted)] mt-2">Tous nos produits sont conçus pour une vitesse et une efficacité maximales.</p>
+                </BentoCard>
+              ))}
+            </div>
+          </section>
+
+          {/* Pricing Section */}
+          <section id="pricing" className="py-24 px-4 text-center relative overflow-hidden">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[var(--purple)] blur-[200px] opacity-10" />
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-4xl md:text-5xl font-bold tracking-tight max-w-2xl mx-auto leading-snug"
+            >
+              Un <span className="tg">prix juste</span> pour des <br className="hidden md:block" />ressources d&apos;exception.
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+              className="text-lg text-[var(--text-muted)] mt-5 max-w-2xl mx-auto leading-relaxed"
+            >
+              Choisissez la formule qui correspond le mieux à vos besoins.
+            </motion.p>
+
+            <div className="flex flex-col lg:flex-row justify-center items-center lg:items-stretch gap-6 max-w-6xl mx-auto mt-20 relative z-10">
+              {/* Free */} 
+              <BentoCard className="w-full lg:w-1/3 p-8 border-[var(--border)]">
+                <h3 className="text-2xl font-bold text-white">Gratuit</h3>
+                <p className="text-4xl font-bold text-white mt-4">0€<span className="text-lg text-[var(--text-muted)]">/mois</span></p>
+                <p className="text-[var(--text-muted)] mt-2 mb-8">Pour commencer vos premiers projets.</p>
+                <MainCTA>
+                  Commencer gratuitement
+                </MainCTA>
+                <ul className="text-left mt-8 space-y-4 text-[var(--text-muted)]">
+                  <li className="flex items-center gap-2"><Check size={18} className="text-green-500" /> Accès produits de base (Free)</li>
+                  <li className="flex items-center gap-2"><Check size={18} className="text-green-500" /> Mises à jour régulières</li>
+                  <li className="flex items-center gap-2"><X size={18} className="text-red-500" /> Support prioritaire</li>
+                </ul>
+              </BentoCard>
+
+              {/* Pro */}
+              <BentoCard className="w-full lg:w-1/3 p-8 border-[var(--purple)] ring-2 ring-[var(--purple-dark)] relative overflow-visible"
+                style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.1), rgba(124,58,237,0.02))', boxShadow: '0 0 30px rgba(124,58,237,0.2)' }}>
+                <span className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold text-white bg-[var(--purple-dark)] shadow-md shadow-[var(--purple-dark)]/40">RECOMMANDÉ</span>
+                <h3 className="text-2xl font-bold text-white">Pro</h3>
+                <p className="text-4xl font-bold text-white mt-4">29€<span className="text-lg text-[var(--text-muted)]">/mois</span></p>
+                <p className="text-[var(--text-muted)] mt-2 mb-8">Pour les builders ambitieux.</p>
+                <MainCTA>
+                  Passer Pro <ArrowRight size={18} className="mt-0.5" />
+                </MainCTA>
+                <ul className="text-left mt-8 space-y-4 text-[var(--text-muted)]">
+                  <li className="flex items-center gap-2"><Check size={18} className="text-green-500" /> Accès à tous les produits Pro</li>
+                  <li className="flex items-center gap-2"><Check size={18} className="text-green-500" /> Mises à jour régulières</li>
+                  <li className="flex items-center gap-2"><Check size={18} className="text-green-500" /> Support prioritaire</li>
+                </ul>
+              </BentoCard>
+
+              {/* VIP */}
+              <BentoCard className="w-full lg:w-1/3 p-8 border-[var(--border)]">
+                <h3 className="text-2xl font-bold text-white">VIP</h3>
+                <p className="text-4xl font-bold text-white mt-4">99€<span className="text-lg text-[var(--text-muted)]">/an</span></p>
+                <p className="text-[var(--text-muted)] mt-2 mb-8">Le plan ultime pour maximiser vos gains.</p>
+                <MainCTA>
+                  Devenir VIP <ArrowRight size={18} className="mt-0.5" />
+                </MainCTA>
+                <ul className="text-left mt-8 space-y-4 text-[var(--text-muted)]">
+                  <li className="flex items-center gap-2"><Check size={18} className="text-green-500" /> Accès à tous les produits VIP</li>
+                  <li className="flex items-center gap-2"><Check size={18} className="text-green-500" /> Mises à jour et accès anticipé</li>
+                  <li className="flex items-center gap-2"><Check size={18} className="text-green-500" /> Support ultra-prioritaire 24/7</li>
+                </ul>
+              </BentoCard>
+            </div>
+          </section>
+
+          {/* CTA Section */}
+          <section className="py-24 px-4 text-center relative overflow-hidden">
+            <div className="absolute inset-0 top-1/2 bg-grid-pattern opacity-10" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[var(--blue)] blur-[180px] opacity-10" />
+
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              className="text-4xl md:text-5xl font-bold tracking-tight max-w-2xl mx-auto leading-snug"
+            >
+              Prêt à <span className="tg">briller</span> ?
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+              className="text-lg text-[var(--text-muted)] mt-5 max-w-2xl mx-auto leading-relaxed"
+            >
+              Accédez à toutes les ressources dont vous avez besoin pour vos projets.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
+              className="flex justify-center flex-wrap gap-4 mt-12"
+            >
+              <MainCTA>
+                Commencer gratuitement <Sparkles size={18} className="mt-0.5" />
+              </MainCTA>
+              <a
+                href="#products"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full text-lg font-semibold text-[var(--text-muted)] border [border-color:var(--border)] transition-all hover:bg-white/[0.08] active:scale-98"
+              >
+                Explorer tous les produits <ArrowUpRight size={18} className="mt-0.5" />
+              </a>
+            </motion.div>
+          </section>
+
+          {/* Footer */}
+          <footer className="border-t [border-color:var(--border)] py-12 px-4">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+              <p className="text-sm text-[var(--text-muted)]">© 2026 Lumio. Tous droits réservés.</p>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[var(--text-faint)]">
+                <a href="#" className="hover:text-[var(--text-muted)] transition-colors">Conditions Générales</a>
+                <a href="#" className="hover:text-[var(--text-muted)] transition-colors">Politique de Confid.</a>
+                <a href="#" className="hover:text-[var(--text-muted)] transition-colors">Centre d&apos;aide</a>
+                <div className="flex gap-4">
+                  <a href="https://github.com/tahidler" target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"><Github size={20} /></a>
+                  <a href="https://twitter.com/tahidler" target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"><Twitter size={20} /></a>
+                  <a href="https://linkedin.com/in/tahidler" target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"><Linkedin size={20} /></a>
+                </div>
+              </div>
+            </div>
+          </footer>
+
+        </main>
       </div>
-    </footer>
-  );
-}
+    )
+  }
 
-// ── APP ───────────────────────────────────────────────────────────────────────
-export default function Home() {
-  return (
-    <>
-      <CursorGlow />
-      <BackgroundScene />
-      <Navbar />
-      <Hero />
-      <Marquee />
-      <BentoSection />
-      <Testimonials />
-      <Pricing />
-      <FinalCTA />
-      <Footer />
-    </>
-  );
-}

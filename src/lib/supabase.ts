@@ -1,54 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Assurez-vous que ces variables sont définies dans votre .env.local
+// NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+// NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Créez le client Supabase uniquement si les variables sont définies
+// Cela permet d'éviter les erreurs de build/runtime en l'absence de configuration
+export const supabase = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
-export type Product = {
-  id: string
-  slug: string
-  name: string
-  description: string
-  long_description: string
-  category: string
-  price: number
-  original_price: number | null
-  preview_url: string | null
-  thumbnail_url: string | null
-  tags: string[]
-  featured: boolean
-  sales_count: number
-  created_at: string
-}
-
-export async function getProducts(category?: string) {
-  let query = supabase
-    .schema('lumio' as never)
-    .from('products')
-    .select('*')
-    .eq('active', true)
-    .order('featured', { ascending: false })
-    .order('sales_count', { ascending: false })
-
-  if (category) {
-    query = query.eq('category', category)
-  }
-
-  const { data, error } = await query
-  if (error) throw error
-  return data as Product[]
-}
-
-export async function getProductBySlug(slug: string) {
-  const { data, error } = await supabase
-    .schema('lumio' as never)
-    .from('products')
-    .select('*')
-    .eq('slug', slug)
-    .eq('active', true)
-    .single()
-
-  if (error) throw error
-  return data as Product
+if (!supabase && process.env.NODE_ENV === 'development') {
+  console.warn(
+    'Supabase client non initialisé. Assurez-vous que NEXT_PUBLIC_SUPABASE_URL ' +
+    'et NEXT_PUBLIC_SUPABASE_ANON_KEY sont définis dans votre .env.local.'
+  )
 }
